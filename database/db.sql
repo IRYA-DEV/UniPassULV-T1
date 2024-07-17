@@ -114,6 +114,7 @@ INSERT INTO DocumentCatalog (TipoDocumento) VALUES ('Reglamento HSU')
 INSERT INTO DocumentCatalog (TipoDocumento) VALUES ('Reglamento HSNM')
 INSERT INTO DocumentCatalog (TipoDocumento) VALUES ('Acuerdo de consentimietno')
 INSERT INTO DocumentCatalog (TipoDocumento) VALUES ('Convenio de salidas')
+INSERT INTO DocumentCatalog (TipoDocumento) VALUES ('Imagen Perfil')
 
 CREATE TABLE Doctos (
     IdDoctos INT IDENTITY PRIMARY KEY,
@@ -124,3 +125,5 @@ CREATE TABLE Doctos (
     CONSTRAINT fk_id_document FOREIGN KEY (IdDocumento) REFERENCES DocumentCatalog(IdDocument),
     CONSTRAINT fk_id_user FOREIGN KEY (IdUser) REFERENCES Users(IdUser)
 )
+
+-- DROP TABLE Doctos
