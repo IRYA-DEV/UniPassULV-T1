@@ -2,39 +2,66 @@ import { getConnection } from "../database/connection.js";
 import sql from 'mssql';
 
 export const getPermissionsByUser = async (req, res) => {
-    const pool = await getConnection();
-    const result = await pool
-    .request()
-    .input('Id', sql.Int, req.params.Id)
-    //.query('SELECT * FROM Permission WHERE IdUsuario = @Id');
-    .query('SELECT * FROM Permission JOIN TypeExit ON Permission.IdTipoSalida = TypeExit.IdExit JOIN Users ON Permission.IdUsuario = Users.IdUser JOIN Workplaces ON Users.IdTrabajo = Workplaces.IdCentroTrabajo WHERE IdUsuario = @Id');
-    res.json(result.recordset);
+    let pool;
+    try {
+        pool = await getConnection();
+        const result = await pool
+            .request()
+            .input('Id', sql.Int, req.params.Id)
+            .query('SELECT * FROM Permission JOIN TypeExit ON Permission.IdTipoSalida = TypeExit.IdTypeExit JOIN LoginUniPass ON Permission.IdUser = LoginUniPass.IdLogin WHERE IdLogin = @Id');
+        res.json(result.recordset);
+    } catch (error) {
+        console.error('Error en el servidor:', error);
+        res.status(500).send(error.message);
+    } finally {
+        if (pool) {
+            try {
+                await pool.close();
+            } catch (closeError) {
+                console.error('Error al cerrar la conexión a la base de datos:', closeError);
+            }
+        }
+    }
 };
 
 export const getPermission = async (req, res) => {
-    console.log(req.params.Id);
+    let pool;
+    try {
+        console.log(req.params.Id);
+        pool = await getConnection();
+        const result = await pool
+            .request()
+            .input("Id", sql.Int, req.params.Id)
+            .query("SELECT * FROM Permission WHERE IdPermission = @Id");
 
-    const pool = await getConnection();
-    const result = await pool
-        .request()
-        .input("Id", sql.Int, req.params.Id)
-        .query("SELECT * FROM Permission WHERE IdPermission = @Id");
-
-    if (result.rowsAffected[0] === 0) {
-        return res.status(404).json({ message: "Dato no encontrado" });
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).json({ message: "Dato no encontrado" });
+        }
+        return res.json(result.recordset[0]);
+    } catch (error) {
+        console.error('Error en el servidor:', error);
+        res.status(500).send(error.message);
+    } finally {
+        if (pool) {
+            try {
+                await pool.close();
+            } catch (closeError) {
+                console.error('Error al cerrar la conexión a la base de datos:', closeError);
+            }
+        }
     }
-    return res.json(result.recordset[0]);
 };
 
 export const createPermission = async (req, res) => {
+    let pool;
     try {
         console.log(req.body);
-        const pool = await getConnection();
+        pool = await getConnection();
 
         // Verifica si el IdUsuario existe en dbo.Users
         const userResult = await pool.request()
-            .input('IdUsuario', sql.Int, req.body.IdUsuario)
-            .query('SELECT 1 FROM dbo.Users WHERE IdUser = @IdUsuario');
+            .input('IdUser', sql.Int, req.body.IdUser)
+            .query('SELECT 1 FROM dbo.LoginUniPass WHERE IdLogin = @IdUser');
 
         if (userResult.recordset.length > 0) {
             // Inserta en la tabla Permission
@@ -45,10 +72,10 @@ export const createPermission = async (req, res) => {
                 .input('FechaSalida', sql.DateTime, req.body.FechaSalida)
                 .input('FechaRegreso', sql.DateTime, req.body.FechaRegreso)
                 .input('Motivo', sql.VarChar, req.body.Motivo)
-                .input('MedioSalida', sql.VarChar, req.body.MedioSalida)
-                .input('IdUsuario', sql.Int, req.body.IdUsuario) // Asegúrate de que este es el valor correcto
+                .input('IdUser', sql.Int, req.body.IdUser)
                 .input('IdTipoSalida', sql.Int, req.body.IdTipoSalida)
-                .query('INSERT INTO Permission (FechaSolicitada, StatusPermission, FechaSalida, FechaRegreso, Motivo, MedioSalida, IdUsuario, IdTipoSalida) VALUES (@FechaSolicitada, @StatusPermission, @FechaSalida, @FechaRegreso, @Motivo, @MedioSalida, @IdUsuario, @IdTipoSalida); SELECT SCOPE_IDENTITY() AS IdPermission');
+                .input('Observaciones', sql.VarChar, 'Ninguna')
+                .query('INSERT INTO Permission (FechaSolicitada, StatusPermission, FechaSalida, FechaRegreso, Motivo, IdUser, IdTipoSalida, Observaciones) VALUES (@FechaSolicitada, @StatusPermission, @FechaSalida, @FechaRegreso, @Motivo, @IdUser, @IdTipoSalida, @Observaciones); SELECT SCOPE_IDENTITY() AS IdPermission');
 
             console.log(result);
             res.json({
@@ -59,44 +86,104 @@ export const createPermission = async (req, res) => {
                 FechaRegreso: req.body.FechaRegreso,
                 Motivo: req.body.Motivo,
                 MedioSalida: req.body.MedioSalida,
-                IdUsuario: req.body.IdUsuario,
+                IdUser: req.body.IdUser,
                 IdTipoSalida: req.body.IdTipoSalida,
             });
         } else {
             res.status(400).json({ error: 'El IdUsuario no existe en dbo.Users' });
         }
     } catch (err) {
-        console.error(err);
+        console.error('Error en el servidor:', err);
         res.status(500).json({ error: 'Error al crear el permiso' });
+    } finally {
+        if (pool) {
+            try {
+                await pool.close();
+            } catch (closeError) {
+                console.error('Error al cerrar la conexión a la base de datos:', closeError);
+            }
+        }
     }
 };
 
-export const cancelpermission = async (req, res) => {
-    const pool = await getConnection();
-    const result = await pool
-        .request()
-        .input("Id", sql.Int, req.params.Id)
-        .input("StatusPermission", sql.VarChar, "Cancelado")
-        .query("UPDATE Permission SET StatusPermission = @StatusPermission WHERE IdPermission = @Id");
-    
-    console.log(result);
-    if (result.rowsAffected[0] === 0) {
-        return res.status(404).json({ message: "Dato no encontrado" });
+export const cancelPermission = async (req, res) => {
+    let pool;
+    try {
+        pool = await getConnection();
+        const result = await pool
+            .request()
+            .input("Id", sql.Int, req.params.Id)
+            .input("StatusPermission", sql.VarChar, "Cancelado")
+            .query("UPDATE Permission SET StatusPermission = @StatusPermission WHERE IdPermission = @Id");
+
+        console.log(result);
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).json({ message: "Dato no encontrado" });
+        }
+        res.json("Dato Actualizado");
+    } catch (error) {
+        console.error('Error en el servidor:', error);
+        res.status(500).send(error.message);
+    } finally {
+        if (pool) {
+            try {
+                await pool.close();
+            } catch (closeError) {
+                console.error('Error al cerrar la conexión a la base de datos:', closeError);
+            }
+        }
     }
-    res.json("Dato Actualizado");
 };
-
-
 
 export const deletePermission = async (req, res) => {
-    const pool = await getConnection();
-    const result = await pool.request()
-        .input("Id", sql.Int, req.params.Id)
-        .query("DELETE FROM Permission WHERE IdPermission = @Id");
-    
-    console.log(result);
-    if (result.rowsAffected[0] === 0) {
-        return res.status(404).json({ message: "Dato no encontrado" });
+    let pool;
+    try {
+        pool = await getConnection();
+        const result = await pool.request()
+            .input("Id", sql.Int, req.params.Id)
+            .query("DELETE FROM Permission WHERE IdPermission = @Id");
+
+        console.log(result);
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).json({ message: "Dato no encontrado" });
+        }
+        return res.json({ message: "Dato Eliminado" });
+    } catch (error) {
+        console.error('Error en el servidor:', error);
+        res.status(500).send(error.message);
+    } finally {
+        if (pool) {
+            try {
+                await pool.close();
+            } catch (closeError) {
+                console.error('Error al cerrar la conexión a la base de datos:', closeError);
+            }
+        }
     }
-    return res.json({ message: "Dato Eliminado" });
+};
+
+export const getPermissionForAutorizacion = async (req, res) => {
+    let pool;
+    try {
+        pool = await getConnection();
+        const result = await pool.request()
+            .input("Id", sql.Int, req.params.Id)
+            .query("SELECT Permission.*, TypeExit.*, LoginUniPass.* FROM Permission INNER JOIN Authorize ON Permission.IdPermission = Authorize.IdPermission JOIN TypeExit ON Permission.IdTipoSalida = TypeExit.IdTypeExit JOIN LoginUniPass ON Permission.IdUser = LoginUniPass.IdLogin WHERE Authorize.IdEmpleado = @Id")
+
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).json({ message: "Dato no encontrado" });
+        }
+        return res.json(result.recordset);
+    } catch (error) {
+        console.error('Error en el servidor:', error);
+        res.status(500).send(error.message);
+    } finally {
+        if (pool) {
+            try {
+                await pool.close();
+            } catch (closeError) {
+                console.error('Error al cerrar la conexión a la base de datos:', closeError);
+            }
+        }
+    }
 };

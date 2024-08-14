@@ -5,8 +5,13 @@ USE UniPass;
 --CREATE TABLE Tutors (
 --    Id INT IDENTITY(1, 1) PRIMARY KEY,
 --    Nombre VARCHAR(100) NOT NULL,
+----  Apellidos Varchar(100) NOT NULL,
 --    Telefono VARCHAR(10) NOT NULL,
---    Celular VARCHAR(10) NOT NULL,
+----  Direccion VARCHAR(150) NOT NULL,
+----  Pais VARCHAR(150) NOT NULL,
+----  Estado VARCHAR(150) NOT NULL,
+----  Cuidad VARCHAR(150) NOT NULL,
+----  CP_Tutor VARCHAR(150) NOT NULL,
 --    Direccion VARCHAR(100),
 --    Correo VARCHAR(80),
 --)
