@@ -31,7 +31,7 @@ export const newUser = async (req, res) => {
       .input('IdDormitorio', sql.Int, req.body.IdDormitorio)
       .query(`
         INSERT INTO LoginUniPass (Matricula, Contraseña, Correo, Nombre, Apellidos, TipoUser, Sexo, FechaNacimiento, Celular, IdDormitorio)
-        VALUES (@Matricula, @Contraseña, @Correo, @Nombre, @Apellidos, @TipoUser, @Sexo, @FechaNacimiento, @Celular, @ IdDormitorio);
+        VALUES (@Matricula, @Contraseña, @Correo, @Nombre, @Apellidos, @TipoUser, @Sexo, @FechaNacimiento, @Celular, @IdDormitorio);
         SELECT SCOPE_IDENTITY() AS IdLogin
       `);
 
