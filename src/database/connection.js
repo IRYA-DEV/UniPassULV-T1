@@ -5,6 +5,11 @@ const dbSettings = {
     password: process.env.DB_PASSWORD || 'Trencole',
     server: process.env.DB_SERVER || 'localhost',
     database: process.env.DB_DATABASE || 'UniPassTest',
+    pool: {
+        max: 10,
+        min: 0,
+        idleTimeoutMillis: 30000
+      },
     options: {
         encrypy: false,
         trustServerCertificate: true,

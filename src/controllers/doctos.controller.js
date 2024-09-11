@@ -98,6 +98,48 @@ export const saveDocument = async (req, res) => {
     }
 };
 
+export const uploadProfile = async (req, res) => {
+    let pool;
+    try {
+        console.log('Archivo recibido:', req.file); // Verificar archivo
+        console.log('Campos recibidos:', req.body); // Verificar campos
+        if (!req.file) {
+            return res.status(400).json({ message: "Archivo no cargado" });
+        }
+        const filePath = '/uploads/' + req.file.filename;
+
+        pool = await getConnection();
+        const result = await pool.request()
+            .input('IdDocumento', sql.Int, req.body.IdDocumento)
+            .input('Archivo', sql.VarChar, filePath)
+            .input('IdLogin', sql.Int, req.body.IdLogin)
+            .query('UPDATE Doctos SET Archivo = @Archivo WHERE IdDocumento = @IdDocumento AND IdLogin = @IdLogin;');
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).json({ message: "No se puede actualizar el archivo" });
+        }
+
+        // Para devolver el registro actualizado
+        const updatedRecord = await pool
+            .request()
+            .input('IdDocumento', sql.Int, req.body.IdDocumento)
+            .input('IdLogin', sql.Int, req.body.IdLogin)
+            .query(`SELECT Archivo FROM Doctos WHERE IdLogin = @IdLogin AND IdDocumento = @IdDocumento`);
+
+        return res.json(updatedRecord.recordset[0]);
+    } catch (error) {
+        console.error('Error en el servidor:', error);
+        return res.status(500).json({ message: 'Error en el proceso de carga' });
+    } finally {
+        if (pool) {
+            try {
+                await pool.close();
+            } catch (closeError) {
+                console.error('Error al cerrar la conexión a la base de datos:', closeError);
+            }
+        }
+    }
+};
+
 export const deleteFileDoc = async (req, res) => {
     let pool;
     try {

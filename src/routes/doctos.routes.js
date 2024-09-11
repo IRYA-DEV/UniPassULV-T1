@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { deleteFileDoc, getDocumentsByUser, saveDocument, getProfile } from "../controllers/doctos.controller.js";
+import { deleteFileDoc, getDocumentsByUser, saveDocument, getProfile, uploadProfile } from "../controllers/doctos.controller.js";
 import { Subirimagen } from "../Middleware/storage.js"; 
 import multer from "multer";
 
@@ -17,6 +17,8 @@ router.get("/doctos/:Id", getDocumentsByUser);
 //router.post("/doctos", upload.single('file'), createDocument);
 
 router.post("/doctosMul", Subirimagen.single('Archivo'), saveDocument)
+
+router.put("/doctosMul/updateProfile", Subirimagen.single('Archivo'), uploadProfile)
 
 //router.post("/doctosMulProfile", Subirimagen.single('Archivo'), saveProfile)
 

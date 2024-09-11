@@ -6,6 +6,9 @@ import permissionRoutes from "./routes/permission.routes.js";
 import doctosRoutes from "./routes/doctos.routes.js";
 import registerRoutes from "./routes/resgister.routes.js";
 import autorizaRoutes from "./routes/authorize.routes.js";
+import bedroomRoutes from "./routes/bedroom.routes.js";
+import checkRoutes from "./routes/checks.routes.js"
+import pointRoutes from "./routes/point.routes.js"
 import morgan from 'morgan';
 
 
@@ -29,5 +32,11 @@ app.use(doctosRoutes);
 app.use(registerRoutes);
 
 app.use(autorizaRoutes);
+
+app.use(bedroomRoutes);
+
+app.use(checkRoutes);
+
+app.use(pointRoutes);
 
 export default app;

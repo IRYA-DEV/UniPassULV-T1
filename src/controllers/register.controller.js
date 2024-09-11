@@ -28,10 +28,11 @@ export const newUser = async (req, res) => {
       .input('Sexo', sql.VarChar, req.body.Sexo)
       .input('FechaNacimiento', sql.DateTime, req.body.FechaNacimiento)
       .input('Celular', sql.VarChar, req.body.Celular)
-      .input('IdDormitorio', sql.Int, req.body.IdDormitorio)
+      .input('StatusActividad', sql.Int, 1)
+      .input('Dormitorio', sql.Int, req.body.Dormitorio)
       .query(`
-        INSERT INTO LoginUniPass (Matricula, Contraseña, Correo, Nombre, Apellidos, TipoUser, Sexo, FechaNacimiento, Celular, IdDormitorio)
-        VALUES (@Matricula, @Contraseña, @Correo, @Nombre, @Apellidos, @TipoUser, @Sexo, @FechaNacimiento, @Celular, @IdDormitorio);
+        INSERT INTO LoginUniPass (Matricula, Contraseña, Correo, Nombre, Apellidos, TipoUser, Sexo, FechaNacimiento, Celular, StatusActividad, Dormitorio)
+        VALUES (@Matricula, @Contraseña, @Correo, @Nombre, @Apellidos, @TipoUser, @Sexo, @FechaNacimiento, @Celular, @StatusActividad, @Dormitorio);
         SELECT SCOPE_IDENTITY() AS IdLogin
       `);
 
@@ -48,7 +49,8 @@ export const newUser = async (req, res) => {
         Sexo: req.body.Sexo,
         FechaNacimiento: req.body.FechaNacimiento,
         Celular: req.body.Celular,
-        IdDormitorio: req.body.IdDormitorio
+        StatusActividad: 1,
+        Dormitorio: req.body.Dormitorio
       });
     } else {
       res.status(500).send('Error al insertar el usuario');

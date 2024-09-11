@@ -60,7 +60,76 @@ export const asignarPreceptor = async (req, res) => {
             try {
                 await pool.close();
             } catch (closeError) {
-                console.error('Error al cerrar la concexion a la base de datos', closeError);
+                console.error('Error al cerrar la conexion a la base de datos', closeError);
+            }
+        }
+    }
+}
+
+export const definirAutorizacion = async (req, res) => {
+    let pool;
+    try {
+        console.log(req.body);
+        pool = await getConnection();
+        const respuesta = await pool
+            .request()
+            .input('IdPermiso', sql.Int, req.params.Id)
+            .input('IdEmpleado', sql.Int, req.body.IdEmpleado)
+            .input('StatusAuthorize', sql.VarChar, req.body.StatusAuthorize)
+            .query('UPDATE Authorize SET StatusAuthorize = @StatusAuthorize WHERE IdAuthorize = (SELECT TOP 1 IdAuthorize FROM Authorize WHERE IdPermission = @IdPermiso AND IdEmpleado = @IdEmpleado ORDER BY IdAuthorize)');
+
+        if (respuesta.rowsAffected[0] === 0) {
+            return res.status(404).json({ message: "Dato no actualizado" });
+        }
+
+        // Para devolver el registro actualizado
+        const updatedRecord = await pool
+            .request()
+            .input('IdPermiso', sql.Int, req.params.Id)
+            .input('IdEmpleado', sql.Int, req.body.IdEmpleado)
+            .input('StatusAuthorize', sql.VarChar, req.body.StatusAuthorize) // Aquí se agrega el parámetro StatusAuthorize
+            .query(`SELECT * FROM Authorize 
+                    WHERE IdPermission = @IdPermiso 
+                    AND IdEmpleado = @IdEmpleado 
+                    AND StatusAuthorize = @StatusAuthorize 
+                    ORDER BY IdAuthorize DESC`);
+
+        return res.json(updatedRecord.recordset[0]);
+    } catch (error) {
+        console.error('Error en el servidor:', error);
+        res.status(500).send(error.message);
+    } finally {
+        if (pool) {
+            try {
+                await pool.close();
+            } catch (error) {
+                console.error('Error al cerrar la conexión a la base de datos', error);
+            }
+        }
+    }
+};
+
+export const verificarValidacion = async (req, res) => {
+    let pool
+    try {
+        pool = await getConnection();
+        const respuesta = await pool.request()
+        .input('IdEmpleado', sql.Int, req.params.Id)
+        .input('IdPermiso', sql.Int, req.query.IdPermiso)
+        .query('SELECT * FROM Authorize WHERE IdEmpleado = @IdEmpleado AND IdPermission = @IdPermiso')
+        if (respuesta.rowsAffected[0] === 0) {
+            return res.status(404).json({ message: "Dato no encontrado"});
+        }
+        return res.json(respuesta.recordset[0]);
+    } catch (error) {
+        console.error('Error en el servidor:', error);
+        res.status(500).send(error.message);
+    } finally {
+        if (pool) {
+            try {
+                await pool.close();
+            } catch (error) {
+                console.error('Error al cerrar la conexion a la base de datos:');
             }
         }
     }

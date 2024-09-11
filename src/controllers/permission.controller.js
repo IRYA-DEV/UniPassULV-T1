@@ -187,3 +187,57 @@ export const getPermissionForAutorizacion = async (req, res) => {
         }
     }
 };
+
+export const getPermissionForAutorizacionPrece = async (req, res) => {
+    let pool;
+    try {
+        pool = await getConnection();
+        const result = await pool.request()
+            .input("Id", sql.Int, req.params.Id)
+            .query("SELECT Permission.*, TypeExit.*, LoginUniPass.* FROM Permission INNER JOIN Authorize ON Permission.IdPermission = Authorize.IdPermission JOIN TypeExit ON Permission.IdTipoSalida = TypeExit.IdTypeExit JOIN LoginUniPass ON Permission.IdUser = LoginUniPass.IdLogin WHERE Authorize.IdEmpleado = @Id AND Permission.IdPermission IN (SELECT A1.IdPermission FROM Authorize A1 WHERE A1.StatusAuthorize = 'Aprobada'AND A1.IdAuthorize = (SELECT TOP 1 A2.IdAuthorize FROM Authorize A2 WHERE A2.IdPermission = A1.IdPermission ORDER BY A2.IdAuthorize));")
+
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).json({ message: "Dato no encontrado" });
+        }
+        return res.json(result.recordset);
+    } catch (error) {
+        console.error('Error en el servidor:', error);
+        res.status(500).send(error.message);
+    } finally {
+        if (pool) {
+            try {
+                await pool.close();
+            } catch (closeError) {
+                console.error('Error al cerrar la conexión a la base de datos:', closeError);
+            }
+        }
+    }
+};
+
+export const autorizarPermiso = async (req, res) => {
+    let pool;
+    try {
+        pool = await getConnection();
+        const respuesta = await pool.request()
+            .input('IdPermiso', sql.Int, req.params.Id)
+            .input('StatusPermission', sql.VarChar, req.body.StatusPermission)
+            .input('Observaciones', sql.VarChar, req.body.Observaciones)
+            .query('UPDATE Permission SET StatusPermission = @StatusPermission, Observaciones = @Observaciones WHERE IdPermission = @IdPermiso');
+        if (respuesta.rowsAffected[0] === 0) {
+            return res.status(404).json({ message: "Dato no actualizado" });
+        }
+        res.json({ message: "Permiso actualizado correctamente" });
+    } catch (error) {
+        console.error('Error en el servidor:', error);
+        res.status(500).send(error.message);
+    } finally {
+        if (pool) {
+            try {
+                await pool.close();
+            } catch (error) {
+                console.error('Error al cerrar la conexion a la base de datos:', error.message);
+            }
+        }
+    }
+}
+
