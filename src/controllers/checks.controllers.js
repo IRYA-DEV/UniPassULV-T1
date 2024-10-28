@@ -48,7 +48,8 @@ export const getChecksDormitorio = async (req, res) => {
             .input('StatusPermission', sql.VarChar, 'Aprobada')
             .input('PuntoName', sql.VarChar, 'Dormitorio')
             .input('Dormitorio', sql.Int, req.params.Id)
-            .query('SELECT Permission.*, TypeExit.*, LoginUniPass.*, CheckPoints.*, Point.* FROM Permission JOIN TypeExit ON Permission.IdTipoSalida = TypeExit.IdTypeExit JOIN LoginUniPass ON Permission.IdUser = LoginUniPass.IdLogin JOIN CheckPoints ON Permission.IdPermission = CheckPoints.IdPermission JOIN Point ON CheckPoints.IdPoint = Point.IdPoint WHERE Permission.StatusPermission = @StatusPermission AND Point.NombrePunto = @PuntoName AND LoginUniPass.Dormitorio = @Dormitorio')
+            .input('CheckEstado', sql.VarChar, 'Pendiente')
+            .query('SELECT Permission.*, TypeExit.*, LoginUniPass.*, CheckPoints.*, Point.* FROM Permission JOIN TypeExit ON Permission.IdTipoSalida = TypeExit.IdTypeExit JOIN LoginUniPass ON Permission.IdUser = LoginUniPass.IdLogin JOIN CheckPoints ON Permission.IdPermission = CheckPoints.IdPermission JOIN Point ON CheckPoints.IdPoint = Point.IdPoint WHERE Permission.StatusPermission = @StatusPermission AND Point.NombrePunto = @PuntoName AND LoginUniPass.Dormitorio = @Dormitorio AND CheckPoints.Estatus = @CheckEstado')
         if (result.rowsAffected[0] === 0) {
             return res.status(404).json({ message: "Dato no encontrado" });
         }
@@ -100,7 +101,7 @@ export const putCheckPoint = async (req, res) => {
     let pool;
     try {
         const { id } = req.params; // El ID del checkpoint a actualizar
-        const { FechaCheck, Estatus } = req.body; // Los datos enviados en la petición
+        const { FechaCheck, Estatus, Observaciones} = req.body; // Los datos enviados en la petición
         
         pool = await getConnection();
         const result = await pool
@@ -108,7 +109,8 @@ export const putCheckPoint = async (req, res) => {
             .input('IdCheck', sql.Int, id)
             .input('FechaCheck', sql.DateTime, FechaCheck) // La fecha y hora que quieres asignar
             .input('Estatus', sql.VarChar, Estatus) // El nuevo estado
-            .query('UPDATE CheckPoints SET FechaCheck = @FechaCheck, Estatus = @Estatus WHERE IdCheck = @IdCheck');
+            .input('Observacion', sql.VarChar, Observaciones) // El nuevo estado
+            .query('UPDATE CheckPoints SET FechaCheck = @FechaCheck, Estatus = @Estatus, Observaciones = @Observacion WHERE IdCheck = @IdCheck');
 
         if (result.rowsAffected[0] === 0) {
             return res.status(404).json({ message: "CheckPoint no encontrado" });

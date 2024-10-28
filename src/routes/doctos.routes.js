@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { deleteFileDoc, getDocumentsByUser, saveDocument, getProfile, uploadProfile } from "../controllers/doctos.controller.js";
+import { deleteFileDoc, getDocumentsByUser, saveDocument, getProfile, uploadProfile, getExpedientesAlumnos, getArchivosAlumno } from "../controllers/doctos.controller.js";
 import { Subirimagen } from "../Middleware/storage.js"; 
 import multer from "multer";
 
@@ -25,5 +25,9 @@ router.put("/doctosMul/updateProfile", Subirimagen.single('Archivo'), uploadProf
 router.delete("/doctosMul/:Id", deleteFileDoc);
 
 //router.delete("/doctos/:Id", deleteDocument);
+
+router.get("/getExpediente/:IdDormi", getExpedientesAlumnos)
+
+router.get("/getArchivos/:Dormitorio/:Nombre/:Apellidos", getArchivosAlumno);
 
 export default router;

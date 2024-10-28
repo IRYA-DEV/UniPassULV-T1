@@ -201,3 +201,77 @@ const deleteFile = async (UserId, IdDocumento) => {
         }
     }
 };
+
+export const getExpedientesAlumnos = async (req, res) => {
+    let pool;
+    try {
+        pool = await getConnection();
+        const result = await pool.request()
+        .input('IdDormitorio', sql.Int, req.params.IdDormi)
+        .query(`SELECT DISTINCT LoginUniPass.Matricula, LoginUniPass.Nombre, 
+            LoginUniPass.Apellidos FROM Doctos 
+            INNER JOIN DocumentCatalog ON DocumentCatalog.IdDocument = Doctos.IdDocumento 
+            INNER JOIN LoginUniPass ON LoginUniPass.IdLogin = Doctos.IdLogin 
+            WHERE LoginUniPass.Dormitorio = @IdDormitorio AND LoginUniPass.TipoUser = 'ALUMNO'`)
+        if (result.recordset.length === 0) {
+            return res.status(404).json({ message: "No se encontraron experientes"})
+        }
+        return res.json(result.recordset);
+    } catch (error){
+        console.error('Error en el servidor:', error);
+        res.status(580).send(error.message);
+    } finally {
+        if (pool) {
+            try {
+                await pool.close();
+            } catch (closeError) {
+                console.error('Error al cerrar la conexion a la base datos:', closeError);
+            }
+        }
+    }
+}
+
+export const getArchivosAlumno = async (req, res) => {
+    console.log(req.params);
+    let pool;
+    try {
+        // Verifica los parámetros recibidos
+        const { Dormitorio, Nombre, Apellidos } = req.params;
+
+        // Si no llegan los parámetros, devuelves un mensaje de error
+        if (!Dormitorio || !Nombre || !Apellidos) {
+            return res.status(400).json({ message: "Faltan parámetros en la solicitud" });
+        }
+
+        pool = await getConnection();
+        const result = await pool.request()
+        .input('Dormitorio', sql.Int, req.params.Dormitorio)
+            .input('Nombre', sql.VarChar, req.params.Nombre)
+            .input('Apellidos', sql.VarChar, req.params.Apellidos)
+            .query(`
+                SELECT Doctos.*, DocumentCatalog.* 
+                FROM Doctos 
+                INNER JOIN DocumentCatalog ON DocumentCatalog.IdDocument = Doctos.IdDocumento
+                INNER JOIN LoginUniPass ON LoginUniPass.IdLogin = Doctos.IdLogin
+                WHERE LoginUniPass.Dormitorio = @Dormitorio 
+                AND LoginUniPass.Nombre = @Nombre 
+                AND LoginUniPass.Apellidos = @Apellidos
+                AND DocumentCatalog.Estado = 'Activo'
+            `);
+        if (result.recordset.length === 0) {
+            return res.status(404).json({ message: "No se encontraron expedientes para el alumno especificado" });
+        }
+        return res.json(result.recordset);
+    } catch (error) {
+        console.error('Error en el servidor:', error);
+        res.status(500).send(error.message);
+    }finally {
+        if (pool) {
+            try {
+                await pool.close();
+            } catch (closeError) {
+                console.error('Error al cerrar la conexión a la base de datos:', closeError);
+            }
+        }
+    }
+}

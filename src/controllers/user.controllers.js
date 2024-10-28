@@ -160,3 +160,82 @@ export const loginUser = async (req, res) => {
         if (pool) pool.close();
     }
 };
+
+export const putPassword = async (req, res) => {
+    let pool;
+    try {
+        const { Correo } = req.params; // El ID del checkpoint a actualizar
+        const { NewPassword} = req.body; // Los datos enviados en la petición
+        
+        pool = await getConnection();
+        const result = await pool
+            .request()
+            .input('Correo', sql.VarChar, Correo)
+            .input('Password', sql.VarChar, NewPassword) // La nueva contraseña
+            .input('TipoUser', sql.VarChar, "DEPARTAMENTO")
+            .query('UPDATE LoginUniPass SET Contraseña = @Password WHERE Correo = @Correo AND TipoUser != @TipoUser');
+
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).json({ message: "Contraseña no actualizada" });
+        }
+
+        res.json({ message: "Contraseña actualizado correctamente" });
+    } catch (error) {
+        console.error('Error al actualizar la contraseña:', error);
+        res.status(500).json({ error: 'Error al actualizar la contraseña' });
+    } finally {
+        if (pool) {
+            try {
+                await pool.close();
+            } catch (closeError) {
+                console.error('Error al cerrar la conexión a la base de datos:', closeError);
+            }
+        }
+    }
+}
+
+export const BuscarUserMatricula = async (req, res) => {
+    let pool;
+    try {
+        console.log(req.params.Matricula);
+        pool = await getConnection();
+        const result = await pool
+            .request()
+            .input("Matricula", sql.VarChar, req.params.Matricula)
+            .query("SELECT * FROM LoginUniPass WHERE Matricula = @Matricula");
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).json({ message: "Dato no encontrado" });
+        }
+        return res.json(result.recordset[0]);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (pool) pool.close();
+    }
+};
+
+export const getBuscarCheckers = async (req, res) => {
+    let pool;
+    try {
+        console.log(req.params.EmailAsignador)
+        pool = await getConnection();
+        const result = await pool
+            .request()
+            .input("EmailEncargado", sql.VarChar, req.params.EmailAsignador)
+            .query(`SELECT * FROM LoginUniPass WHERE TipoUser = 'DEPARTAMENTO' AND Correo = @EmailEncargado`)
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).json({message: "No hay datos registrados"})
+        }
+        return res.json(result.recordset);
+    } catch (error) {
+        res.status(500).json({ error: error.message});
+    } finally {
+        if (pool) {
+            try {
+                await pool.close();
+            } catch (closeError) {
+                console.error('Error al cerrar la conexión a la base de datos:', closeError);
+            }
+        }
+    }
+}
