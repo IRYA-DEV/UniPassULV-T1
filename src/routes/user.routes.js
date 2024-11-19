@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getUsers, getUser, createUser, updateUser, deleteUser, loginUser, putPassword, BuscarUserMatricula, getBuscarCheckers } from "../controllers/user.controllers.js";
+import { getUsers, getUser, createUser, updateUser, deleteUser, loginUser, putPassword, BuscarUserMatricula, getBuscarCheckers, buscarPersona, updateCargo, endCargo } from "../controllers/user.controllers.js";
 
 const router = Router();
 
@@ -19,6 +19,12 @@ router.post("/login", loginUser);
 
 router.put("/password/:Correo", putPassword);
 
-router.get("/userChecks/:EmailAsignador", getBuscarCheckers,)
+router.get("/userChecks/:EmailAsignador", getBuscarCheckers);
+
+router.get("/buscarUser/:Nombre", buscarPersona);
+
+router.put("/cambiarCargo/:Matricula", updateCargo);
+
+router.put("/terminarCargo/:Matricula", endCargo);
 
 export default router;

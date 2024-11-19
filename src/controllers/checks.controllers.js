@@ -42,16 +42,26 @@ export const createChecksPermission = async (req, res) => {
 export const getChecksDormitorio = async (req, res) => {
     let pool;
     try {
-        pool = await getConnection()
+        pool = await getConnection();
         const result = await pool
             .request()
             .input('StatusPermission', sql.VarChar, 'Aprobada')
             .input('PuntoName', sql.VarChar, 'Dormitorio')
             .input('Dormitorio', sql.Int, req.params.Id)
             .input('CheckEstado', sql.VarChar, 'Pendiente')
-            .query('SELECT Permission.*, TypeExit.*, LoginUniPass.*, CheckPoints.*, Point.* FROM Permission JOIN TypeExit ON Permission.IdTipoSalida = TypeExit.IdTypeExit JOIN LoginUniPass ON Permission.IdUser = LoginUniPass.IdLogin JOIN CheckPoints ON Permission.IdPermission = CheckPoints.IdPermission JOIN Point ON CheckPoints.IdPoint = Point.IdPoint WHERE Permission.StatusPermission = @StatusPermission AND Point.NombrePunto = @PuntoName AND LoginUniPass.Dormitorio = @Dormitorio AND CheckPoints.Estatus = @CheckEstado')
+            .query(`SELECT Permission.*, TypeExit.*, LoginUniPass.*, CheckPoints.*, Point.* 
+                    FROM Permission 
+                    JOIN TypeExit ON Permission.IdTipoSalida = TypeExit.IdTypeExit 
+                    JOIN LoginUniPass ON Permission.IdUser = LoginUniPass.IdLogin 
+                    JOIN CheckPoints ON Permission.IdPermission = CheckPoints.IdPermission 
+                    JOIN Point ON CheckPoints.IdPoint = Point.IdPoint 
+                    WHERE Permission.StatusPermission = 'Aprobada' 
+                      AND Point.NombrePunto = 'Dormitorio' 
+                      AND CheckPoints.Estatus = 'Pendiente' 
+                      AND Accion = 'SALIDA' 
+                      AND LoginUniPass.Dormitorio = @Dormitorio`);
         if (result.rowsAffected[0] === 0) {
-            return res.status(404).json({ message: "Dato no encontrado" });
+            return res.status(200).json(null); // Retorna null si no hay datos
         }
         return res.json(result.recordset);
     } catch (error) {
@@ -66,20 +76,106 @@ export const getChecksDormitorio = async (req, res) => {
             }
         }
     }
-}
+};
+
+export const getChecksDormitorioFinal = async (req, res) => {
+    let pool;
+    try {
+        pool = await getConnection();
+        const result = await pool
+            .request()
+            .input('StatusPermission', sql.VarChar, 'Aprobada')
+            .input('PuntoName', sql.VarChar, 'Dormitorio')
+            .input('Dormitorio', sql.Int, req.params.Id)
+            .input('CheckEstado', sql.VarChar, 'Pendiente')
+            .query(`WITH OrderedCheckPoints AS (
+                        SELECT 
+                            CheckPoints.*,
+                            ROW_NUMBER() OVER (PARTITION BY IdPermission ORDER BY FechaCheck) AS CheckNumber
+                        FROM CheckPoints
+                    )
+                    SELECT 
+                        Permission.*, 
+                        TypeExit.*, 
+                        LoginUniPass.*, 
+                        CheckPoints.*, 
+                        Point.*
+                    FROM Permission
+                    JOIN TypeExit ON Permission.IdTipoSalida = TypeExit.IdTypeExit
+                    JOIN LoginUniPass ON Permission.IdUser = LoginUniPass.IdLogin
+                    JOIN CheckPoints ON Permission.IdPermission = CheckPoints.IdPermission
+                    JOIN Point ON CheckPoints.IdPoint = Point.IdPoint
+                    WHERE Permission.StatusPermission = 'Aprobada'
+                      AND Point.NombrePunto = 'Dormitorio'
+                      AND LoginUniPass.Dormitorio = @Dormitorio
+                      AND CheckPoints.Estatus = 'Pendiente'
+                      AND CheckPoints.Accion = 'RETORNO'
+                      AND EXISTS (
+                          SELECT 1
+                          FROM OrderedCheckPoints AS SubCheck
+                          WHERE SubCheck.IdPermission = Permission.IdPermission
+                            AND SubCheck.CheckNumber = 2
+                            AND SubCheck.Estatus = 'Confirmada'
+                      )
+                      AND EXISTS (
+                          SELECT 1
+                          FROM OrderedCheckPoints AS SubCheck
+                          WHERE SubCheck.IdPermission = Permission.IdPermission
+                            AND SubCheck.CheckNumber = 3
+                            AND SubCheck.Estatus = 'Confirmada'
+                      );`);
+        if (result.rowsAffected[0] === 0) {
+            return res.status(200).json(null); // Retorna null si no hay datos
+        }
+        return res.json(result.recordset);
+    } catch (error) {
+        console.error('Error en el servidor:', error);
+        res.status(500).send(error.message);
+    } finally {
+        if (pool) {
+            try {
+                await pool.close();
+            } catch (closeError) {
+                console.error('Error al cerrar la conexión a la base de datos:', closeError);
+            }
+        }
+    }
+};
+
 
 export const getChecksVigilancia = async (req, res) => {
     let pool;
     try {
-        pool = await getConnection()
+        pool = await getConnection();
         const result = await pool
             .request()
             .input('StatusPermission', sql.VarChar, 'Aprobada')
             .input('PuntoName', sql.VarChar, 'Caseta')
             .input('CheckEstado', sql.VarChar, 'Pendiente')
-            .query('SELECT Permission.*, TypeExit.*, LoginUniPass.*, CheckPoints.*, Point.* FROM Permission JOIN TypeExit ON Permission.IdTipoSalida = TypeExit.IdTypeExit JOIN LoginUniPass ON Permission.IdUser = LoginUniPass.IdLogin JOIN CheckPoints ON Permission.IdPermission = CheckPoints.IdPermission JOIN Point ON CheckPoints.IdPoint = Point.IdPoint WHERE Permission.StatusPermission = @StatusPermission AND Point.NombrePunto = @PuntoName and CheckPoints.Estatus = @CheckEstado')
+            .query(`SELECT Permission.*, TypeExit.*, LoginUniPass.*, CheckPoints.*, Point.*
+                    FROM Permission
+                    JOIN TypeExit ON Permission.IdTipoSalida = TypeExit.IdTypeExit
+                    JOIN LoginUniPass ON Permission.IdUser = LoginUniPass.IdLogin
+                    JOIN CheckPoints ON Permission.IdPermission = CheckPoints.IdPermission
+                    JOIN Point ON CheckPoints.IdPoint = Point.IdPoint
+                    WHERE 
+                      Permission.StatusPermission = @StatusPermission
+                      AND Point.NombrePunto = @PuntoName
+                      AND CheckPoints.Estatus = @CheckEstado
+                      AND CheckPoints.Accion = 'SALIDA'
+                      AND EXISTS (
+                          SELECT 1
+                          FROM CheckPoints AS SubCheck
+                          WHERE SubCheck.IdPermission = Permission.IdPermission
+                            AND SubCheck.Estatus = 'Confirmada'
+                            AND SubCheck.FechaCheck = (
+                                SELECT MIN(FechaCheck)
+                                FROM CheckPoints AS FirstCheck
+                                WHERE FirstCheck.IdPermission = SubCheck.IdPermission
+                            )
+                      );`);
         if (result.rowsAffected[0] === 0) {
-            return res.status(404).json({ message: "Dato no encontrado" });
+            return res.status(200).json(null); // Retorna null si no hay datos
         }
         return res.json(result.recordset);
     } catch (error) {
@@ -94,7 +190,60 @@ export const getChecksVigilancia = async (req, res) => {
             }
         }
     }
-}
+};
+export const getChecksVigilanciaRegreso = async (req, res) => {
+    let pool;
+    try {
+        pool = await getConnection();
+        const result = await pool
+            .request()
+            .input('StatusPermission', sql.VarChar, 'Aprobada')
+            .input('PuntoName', sql.VarChar, 'Caseta')
+            .input('CheckEstado', sql.VarChar, 'Pendiente')
+            .query(`SELECT 
+    Permission.*, 
+    TypeExit.*, 
+    LoginUniPass.*, 
+    CheckPoints.*, 
+    Point.*
+FROM Permission
+JOIN TypeExit ON Permission.IdTipoSalida = TypeExit.IdTypeExit
+JOIN LoginUniPass ON Permission.IdUser = LoginUniPass.IdLogin
+JOIN CheckPoints ON Permission.IdPermission = CheckPoints.IdPermission
+JOIN Point ON CheckPoints.IdPoint = Point.IdPoint
+WHERE 
+    Permission.StatusPermission = @StatusPermission
+    AND Point.NombrePunto = @PuntoName
+    AND CheckPoints.Estatus = @CheckEstado
+    AND CheckPoints.Accion = 'RETORNO'
+    AND EXISTS (
+        SELECT 1
+        FROM CheckPoints AS SubCheck
+        JOIN Point AS SubPoint ON SubCheck.IdPoint = SubPoint.IdPoint
+        WHERE 
+            SubCheck.IdPermission = Permission.IdPermission
+            AND SubPoint.NombrePunto = 'Caseta'
+            AND SubCheck.Estatus = 'Confirmada'
+            AND SubCheck.Accion = 'SALIDA'
+    );`);
+        if (result.rowsAffected[0] === 0) {
+            return res.status(200).json(null); // Retorna null si no hay datos
+        }
+        return res.json(result.recordset);
+    } catch (error) {
+        console.error('Error en el servidor:', error);
+        res.status(500).send(error.message);
+    } finally {
+        if (pool) {
+            try {
+                await pool.close();
+            } catch (closeError) {
+                console.error('Error al cerrar la conexión a la base de datos:', closeError);
+            }
+        }
+    }
+};
+
 
 // Controlador para actualizar el estado y la fecha/hora de un CheckPoint
 export const putCheckPoint = async (req, res) => {

@@ -217,7 +217,14 @@ export const getPermissionForAutorizacion = async (req, res) => {
         pool = await getConnection();
         const result = await pool.request()
             .input("Id", sql.Int, req.params.Id)
-            .query("SELECT Permission.*, TypeExit.*, LoginUniPass.* FROM Permission INNER JOIN Authorize ON Permission.IdPermission = Authorize.IdPermission JOIN TypeExit ON Permission.IdTipoSalida = TypeExit.IdTypeExit JOIN LoginUniPass ON Permission.IdUser = LoginUniPass.IdLogin WHERE Authorize.IdEmpleado = @Id")
+            .query(`SELECT Permission.*, TypeExit.*, LoginUniPass.* 
+FROM Permission 
+INNER JOIN Authorize ON Permission.IdPermission = Authorize.IdPermission 
+JOIN TypeExit ON Permission.IdTipoSalida = TypeExit.IdTypeExit 
+JOIN LoginUniPass ON Permission.IdUser = LoginUniPass.IdLogin 
+WHERE Authorize.IdEmpleado = @Id 
+AND Permission.FechaSalida BETWEEN DATEADD(DAY, -30, GETDATE()) AND DATEADD(DAY, 15, GETDATE());
+`)
 
         if (result.rowsAffected[0] === 0) {
             return res.status(404).json({ message: "Dato no encontrado" });
@@ -243,10 +250,43 @@ export const getPermissionForAutorizacionPrece = async (req, res) => {
         pool = await getConnection();
         const result = await pool.request()
             .input("Id", sql.Int, req.params.Id)
-            .query("SELECT Permission.*, TypeExit.*, LoginUniPass.* FROM Permission INNER JOIN Authorize ON Permission.IdPermission = Authorize.IdPermission JOIN TypeExit ON Permission.IdTipoSalida = TypeExit.IdTypeExit JOIN LoginUniPass ON Permission.IdUser = LoginUniPass.IdLogin WHERE Authorize.IdEmpleado = @Id AND Permission.IdPermission IN (SELECT A1.IdPermission FROM Authorize A1 GROUP BY A1.IdPermission HAVING COUNT(A1.IdAuthorize) = 1) UNION SELECT Permission.*, TypeExit.*, LoginUniPass.* FROM Permission INNER JOIN Authorize ON Permission.IdPermission = Authorize.IdPermission JOIN TypeExit ON Permission.IdTipoSalida = TypeExit.IdTypeExit JOIN LoginUniPass ON Permission.IdUser = LoginUniPass.IdLogin WHERE Authorize.IdEmpleado = @Id AND Permission.IdPermission IN (SELECT A1.IdPermission FROM Authorize A1 WHERE A1.StatusAuthorize = 'Aprobada'AND A1.IdAuthorize = (SELECT TOP 1 A2.IdAuthorize FROM Authorize A2 WHERE A2.IdPermission = A1.IdPermission ORDER BY A2.IdAuthorize));")
+            .query(`SELECT Permission.*, TypeExit.*, LoginUniPass.* 
+FROM Permission 
+INNER JOIN Authorize ON Permission.IdPermission = Authorize.IdPermission 
+JOIN TypeExit ON Permission.IdTipoSalida = TypeExit.IdTypeExit 
+JOIN LoginUniPass ON Permission.IdUser = LoginUniPass.IdLogin 
+WHERE Authorize.IdEmpleado = @Id 
+AND Permission.IdPermission IN (
+    SELECT A1.IdPermission 
+    FROM Authorize A1 
+    GROUP BY A1.IdPermission 
+    HAVING COUNT(A1.IdAuthorize) = 1
+)
+AND Permission.FechaSalida BETWEEN DATEADD(DAY, -30, GETDATE()) AND DATEADD(DAY, 15, GETDATE())
+
+UNION
+
+SELECT Permission.*, TypeExit.*, LoginUniPass.* 
+FROM Permission 
+INNER JOIN Authorize ON Permission.IdPermission = Authorize.IdPermission 
+JOIN TypeExit ON Permission.IdTipoSalida = TypeExit.IdTypeExit 
+JOIN LoginUniPass ON Permission.IdUser = LoginUniPass.IdLogin 
+WHERE Authorize.IdEmpleado = @Id 
+AND Permission.IdPermission IN (
+    SELECT A1.IdPermission 
+    FROM Authorize A1 
+    WHERE A1.StatusAuthorize = 'Aprobada' 
+    AND A1.IdAuthorize = (
+        SELECT TOP 1 A2.IdAuthorize 
+        FROM Authorize A2 
+        WHERE A2.IdPermission = A1.IdPermission 
+        ORDER BY A2.IdAuthorize
+    )
+)
+AND Permission.FechaSalida BETWEEN DATEADD(DAY, -30, GETDATE()) AND DATEADD(DAY, 15, GETDATE());`)
 
         if (result.rowsAffected[0] === 0) {
-            return res.status(404).json({ message: "Dato no encontrado" });
+            return res.json(null);
         }
         return res.json(result.recordset);
     } catch (error) {

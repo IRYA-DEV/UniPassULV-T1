@@ -9,6 +9,8 @@ import autorizaRoutes from "./routes/authorize.routes.js";
 import bedroomRoutes from "./routes/bedroom.routes.js";
 import checkRoutes from "./routes/checks.routes.js"
 import pointRoutes from "./routes/point.routes.js"
+import positionRoutes from "./routes/position.routes.js"
+import userchecksRoutes from "./routes/usercheckers.routes.js"
 import morgan from 'morgan';
 
 
@@ -38,5 +40,9 @@ app.use(bedroomRoutes);
 app.use(checkRoutes);
 
 app.use(pointRoutes);
+
+app.use(positionRoutes);
+
+app.use(userchecksRoutes);
 
 export default app;

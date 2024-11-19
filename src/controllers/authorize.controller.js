@@ -24,7 +24,11 @@ export const createAuthorize = async (req, res) => {
             IdPermission: req.body.IdPermission,
             StatusAuthorize: 'Pendiente',
         });
-    } catch (err) {
+    } catch (error) {
+        if (error.code === 'ECONNCLOSED') {
+            console.error('La conexión se cerró, reintentando...');
+            return createAuthorize(req, res); // Intento de reconexión
+        }
         console.error('Error en el servidor');
         res.status(500).json({ error: 'Error al crear el servicio'});
     } finally {
@@ -53,6 +57,10 @@ export const asignarPreceptor = async (req, res) => {
         }
         return res.json(respuesta.recordset[0]);
     } catch (error) {
+        if (error.code === 'ECONNCLOSED') {
+            console.error('La conexión se cerró, reintentando...');
+            return definirAutorizacion(req, res); // Intento de reconexión
+        }
         console.error('Error en el servidor:', error);
         res.status(500).send(error.message);
     }finally {
@@ -96,6 +104,10 @@ export const definirAutorizacion = async (req, res) => {
 
         return res.json(updatedRecord.recordset[0]);
     } catch (error) {
+        if (error.code === 'ECONNCLOSED') {
+            console.error('La conexión se cerró, reintentando...');
+            return definirAutorizacion(req, res); // Intento de reconexión
+        }
         console.error('Error en el servidor:', error);
         res.status(500).send(error.message);
     } finally {
@@ -122,6 +134,10 @@ export const verificarValidacion = async (req, res) => {
         }
         return res.json(respuesta.recordset[0]);
     } catch (error) {
+        if (error.code === 'ECONNCLOSED') {
+            console.error('La conexión se cerró, reintentando...');
+            return verificarValidacion(req, res); // Intento de reconexión
+        }
         console.error('Error en el servidor:', error);
         res.status(500).send(error.message);
     } finally {
