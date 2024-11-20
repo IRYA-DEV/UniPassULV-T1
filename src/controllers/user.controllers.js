@@ -1,4 +1,5 @@
 import { getConnection } from "../database/connection.js";
+import { hashData, VerifyHashData } from '../util/hashData.js';
 import sql from 'mssql';
 
 export const getUsers = async (req, res) => {
@@ -116,15 +117,20 @@ export const updateCargo = async (req, res) => {
     }
 }
 
+
 export const createUser = async (req, res) => {
     let pool;
     try {
         console.log(req.body);
+
+        // Encripta la contraseña antes de enviarla a la base de datos
+        const hashedPassword = await hashData(req.body.Contraseña);
+
         pool = await getConnection();
         const result = await pool
             .request()
             .input('Matricula', sql.VarChar, req.body.Matricula)
-            .input('Contraseña', sql.VarChar, req.body.Contraseña)
+            .input('Contraseña', sql.VarChar, hashedPassword) // Usa la contraseña encriptada
             .input('Correo', sql.VarChar, req.body.Correo)
             .input('Nombre', sql.VarChar, req.body.Nombre)
             .input('Telefono', sql.VarChar, req.body.Telefono)
@@ -134,17 +140,22 @@ export const createUser = async (req, res) => {
             .input('TipoUser', sql.VarChar, req.body.TipoUser)
             .input('IdTutor', sql.Int, req.body.IdTutor)
             .input('IdTrabajo', sql.Int, req.body.IdTrabajo)
-            .query('INSERT INTO Users (Matricula ,Contraseña ,Correo ,Nombre ,Telefono ,Celular ,Sexo ,Domicilio ,TipoUser ,IdTutor ,IdTrabajo ) VALUES (@Matricula ,@Contraseña ,@Correo ,@Nombre ,@Telefono ,@Celular ,@Sexo ,@Domicilio ,@TipoUser ,@IdTutor ,@IdTrabajo); SELECT SCOPE_IDENTITY() AS IdUser');
+            .query(
+                'INSERT INTO Users (Matricula, Contraseña, Correo, Nombre, Telefono, Celular, Sexo, Domicilio, TipoUser, IdTutor, IdTrabajo) ' +
+                'VALUES (@Matricula, @Contraseña, @Correo, @Nombre, @Telefono, @Celular, @Sexo, @Domicilio, @TipoUser, @IdTutor, @IdTrabajo); ' +
+                'SELECT SCOPE_IDENTITY() AS IdUser'
+            );
+
         console.log(result);
+
         res.json({
             Id: result.recordset[0].Id,
             Matricula: req.body.Matricula,
-            Contraseña: req.body.Contraseña,
             Correo: req.body.Correo,
             Nombre: req.body.Nombre,
             Telefono: req.body.Telefono,
             Celular: req.body.Celular,
-            Sexo: req.body.Celular,
+            Sexo: req.body.Sexo,
             Domicilio: req.body.Domicilio,
             TipoUser: req.body.TipoUser,
             IdTutor: req.body.IdTutor,
@@ -156,6 +167,7 @@ export const createUser = async (req, res) => {
         if (pool) pool.close();
     }
 };
+
 
 export const updateUser = async (req, res) => {
     let pool;
@@ -215,27 +227,42 @@ export const loginUser = async (req, res) => {
         console.log(req.body);
         pool = await getConnection();
 
-        // Intentar con matrícula y contraseña
-        let result = await pool
-            .request()
-            .input('Matricula', sql.VarChar, Matricula)
-            .input('Contraseña', sql.VarChar, Contraseña)
-            .query('SELECT * FROM LoginUniPass WHERE Matricula = @Matricula AND Contraseña = @Contraseña');
-        if (result.recordset.length > 0) {
-            return res.json({ success: true, user: result.recordset[0] });
+        let result;
+
+        // Intentar con matrícula
+        if (Matricula) {
+            result = await pool
+                .request()
+                .input('Matricula', sql.VarChar, Matricula)
+                .query('SELECT * FROM LoginUniPass WHERE Matricula = @Matricula');
+        } 
+        // Intentar con correo
+        else if (Correo) {
+            result = await pool
+                .request()
+                .input('Correo', sql.VarChar, Correo)
+                .query('SELECT * FROM LoginUniPass WHERE Correo = @Correo');
+        } else {
+            return res.status(400).json({ success: false, message: 'Debe proporcionar matrícula o correo' });
         }
 
-        // Intentar con correo y contraseña
-        result = await pool
-            .request()
-            .input('Correo', sql.VarChar, Correo)
-            .input('Contraseña', sql.VarChar, Contraseña)
-            .query('SELECT * FROM LoginUniPass WHERE Correo = @Correo AND Contraseña = @Contraseña');
-        if (result.recordset.length > 0) {
-            return res.json({ success: true, user: result.recordset[0] });
+        // Verificar si se encontró un usuario
+        if (result.recordset.length === 0) {
+            return res.status(401).json({ success: false, message: 'Credenciales inválidas' });
         }
 
-        res.status(401).json({ success: false, message: 'Credenciales inválidas' });
+        const user = result.recordset[0];
+
+        // Comparar la contraseña ingresada con el hash almacenado
+        const isPasswordValid = await VerifyHashData(Contraseña, user.Contraseña);
+
+        if (!isPasswordValid) {
+            return res.status(401).json({ success: false, message: 'Credenciales inválidas' });
+        }
+
+        // Contraseña válida, enviar respuesta exitosa
+        return res.json({ success: true, user });
+
     } catch (error) {
         res.status(500).json({ error: error.message });
     } finally {
@@ -246,14 +273,17 @@ export const loginUser = async (req, res) => {
 export const putPassword = async (req, res) => {
     let pool;
     try {
-        const { Correo } = req.params; // El ID del checkpoint a actualizar
-        const { NewPassword} = req.body; // Los datos enviados en la petición
-        
+        const { Correo } = req.params; // Correo del usuario
+        const { NewPassword } = req.body; // Nueva contraseña enviada en la petición
+
+        // Hashear la nueva contraseña
+        const hashedPassword = await hashData(NewPassword);
+
         pool = await getConnection();
         const result = await pool
             .request()
             .input('Correo', sql.VarChar, Correo)
-            .input('Password', sql.VarChar, NewPassword) // La nueva contraseña
+            .input('Password', sql.VarChar, hashedPassword) // Contraseña hasheada
             .input('TipoUser', sql.VarChar, "DEPARTAMENTO")
             .query('UPDATE LoginUniPass SET Contraseña = @Password WHERE Correo = @Correo AND TipoUser != @TipoUser');
 
@@ -261,7 +291,7 @@ export const putPassword = async (req, res) => {
             return res.status(404).json({ message: "Contraseña no actualizada" });
         }
 
-        res.json({ message: "Contraseña actualizado correctamente" });
+        res.json({ message: "Contraseña actualizada correctamente" });
     } catch (error) {
         console.error('Error al actualizar la contraseña:', error);
         res.status(500).json({ error: 'Error al actualizar la contraseña' });
@@ -274,7 +304,8 @@ export const putPassword = async (req, res) => {
             }
         }
     }
-}
+};
+
 
 export const BuscarUserMatricula = async (req, res) => {
     let pool;
