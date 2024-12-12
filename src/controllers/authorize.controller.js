@@ -11,7 +11,7 @@ export const createAuthorize = async (req, res) => {
             .input('IdEmpleado', sql.Int, req.body.IdEmpleado)
             .input('NoDepto', sql.Int, req.body.NoDepto)
             .input('IdPermission', sql.Int, req.body.IdPermission)
-            .input('StatusAuthorize', sql.VarChar, 'Pendiente')
+            .input('StatusAuthorize', sql.VarChar, req.body.StatusAuthorize)
             .query('INSERT INTO Authorize (IdEmpleado, NoDepto, IdPermission, StatusAuthorize) VALUES (@IdEmpleado, @NoDepto, @IdPermission, @StatusAuthorize); SELECT SCOPE_IDENTITY() AS IdAuthorize');
         if (respuesta.recordset.length === 0) {
             return res.status(404).json({ message: "No se puede guardar el archivo" });
@@ -22,7 +22,7 @@ export const createAuthorize = async (req, res) => {
             IdEmpleado: req.body.IdEmpleado,
             NoDepto: req.body.NoDepto,
             IdPermission: req.body.IdPermission,
-            StatusAuthorize: 'Pendiente',
+            StatusAuthorize: req.body.StatusAuthorize,
         });
     } catch (error) {
         if (error.code === 'ECONNCLOSED') {
