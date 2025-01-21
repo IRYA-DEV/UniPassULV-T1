@@ -424,7 +424,7 @@ export const documentComplet = async (req, res) => {
         pool = await getConnection();
         const respuesta = await pool.request()
             .input('Matricula', sql.VarChar, req.params.Matricula)
-            .input('StatusDoc', sql.VarChar, req.body.StatusDoc)
+            .input('StatusDoc', sql.Int, req.body.StatusDoc)
             .query(`UPDATE LoginUniPass SET Documentacion = @StatusDoc WHERE Matricula = @Matricula`);
         if (respuesta.rowsAffected[0] === 0) {
             return res.status(404).json({ message: "Dato no encontrado" });

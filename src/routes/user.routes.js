@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getUsers, getUser, createUser, updateUser, deleteUser, loginUser, putPassword, BuscarUserMatricula, getBuscarCheckers, buscarPersona, updateCargo, endCargo, registerTokenFCM, SearchTokenFCM } from "../controllers/user.controllers.js";
+import { getUsers, getUser, createUser, updateUser, deleteUser, loginUser, putPassword, BuscarUserMatricula, getBuscarCheckers, buscarPersona, updateCargo, endCargo, registerTokenFCM, SearchTokenFCM, documentComplet } from "../controllers/user.controllers.js";
 
 const router = Router();
 
@@ -30,5 +30,7 @@ router.put("/terminarCargo/:Matricula", endCargo);
 router.get("/VerToken/:Matricula", SearchTokenFCM);
 
 router.put("/TokenDispositivo/:Matricula", registerTokenFCM);
+
+router.put('/Documentacion/:Matricula', documentComplet);
 
 export default router;
