@@ -3,13 +3,13 @@ import { cambiarActivo, createPosition, getInfoCargo, getInfoDelegado } from "..
 
 const router = Router();
 
-router.get("/InfoCargo/:Id", getInfoCargo)
+router.get("/InfoCargo/:Id", getInfoCargo);
 
-router.get("/InfoDelegado/:Id", getInfoDelegado)
+router.get("/InfoDelegado/:Id", getInfoDelegado);
 
 router.post("/createPosition", createPosition);
 
-router.put("/activarCargo/:Id", cambiarActivo) 
+router.put("/activarCargo/:Id", cambiarActivo);
 
 export default router;
 

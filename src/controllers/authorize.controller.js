@@ -150,3 +150,29 @@ export const verificarValidacion = async (req, res) => {
         }
     }
 }
+
+export const AdvancePermission = async (req, res) => {
+    let pool
+    try {
+        console.log(req.params.Id);
+        pool = await getConnection();
+        const respuesta = await pool.request()
+        .input('Id', sql.Int, req.params.Id)
+        .query('SELECT * FROM Authorize WHERE IdPermission = @Id');
+        // Verifica si hay resultados.
+        if (respuesta.recordset.length === 0) {
+            return res.status(404).json({ message: "Dato no encontrado" });
+        }
+        return res.json(respuesta.recordset);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (pool) {
+            try {
+                await pool.close();
+            } catch (error) {
+                console.error('Error al cerrar la conexion a la base de datos:');
+            }
+        }
+    }
+}

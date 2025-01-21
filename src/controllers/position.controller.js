@@ -44,7 +44,7 @@ WHERE Position.MatriculaEncargado = @Id`);
             if (result.rowsAffected[0] === 0) {
                 return res.json(null);
             }
-            return res.json(result.recordset[0]);
+            return res.json(result.recordset);
     } catch (error) {
         console.error('Error en el servidor:', error);
         res.status(500).send(error.message);
@@ -70,7 +70,7 @@ export const createPosition = async (req, res) => {
             .input("MatriculaEncargado", sql.VarChar, req.body.MatriculaEncargado)
             .input("ClassUser", sql.VarChar, req.body.ClassUser)
             .input("Asignado", sql.VarChar, req.body.Asignado)
-            .input("Activo", sql.Int, 1)
+            .input("Activo", sql.Int, 0)
             .query(`INSERT INTO Position (MatriculaEncargado, ClassUser, Asignado, Activo) 
                     VALUES (@MatriculaEncargado, @ClassUser, @Asignado, @Activo);
                     SELECT SCOPE_IDENTITY() AS id;`);

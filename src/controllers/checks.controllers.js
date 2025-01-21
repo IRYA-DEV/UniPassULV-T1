@@ -49,17 +49,18 @@ export const getChecksDormitorio = async (req, res) => {
             .input('PuntoName', sql.VarChar, 'Dormitorio')
             .input('Dormitorio', sql.Int, req.params.Id)
             .input('CheckEstado', sql.VarChar, 'Pendiente')
-            .query(`SELECT Permission.*, TypeExit.*, LoginUniPass.*, CheckPoints.*, Point.* 
-                    FROM Permission 
-                    JOIN TypeExit ON Permission.IdTipoSalida = TypeExit.IdTypeExit 
-                    JOIN LoginUniPass ON Permission.IdUser = LoginUniPass.IdLogin 
-                    JOIN CheckPoints ON Permission.IdPermission = CheckPoints.IdPermission 
-                    JOIN Point ON CheckPoints.IdPoint = Point.IdPoint 
-                    WHERE Permission.StatusPermission = 'Aprobada' 
-                      AND Point.NombrePunto = 'Dormitorio' 
-                      AND CheckPoints.Estatus = 'Pendiente' 
-                      AND Accion = 'SALIDA' 
-                      AND LoginUniPass.Dormitorio = @Dormitorio`);
+            .query(`SELECT Permission.*, TypeExit.*, LoginUniPass.*, CheckPoints.*, Point.*
+FROM Permission
+JOIN TypeExit ON Permission.IdTipoSalida = TypeExit.IdTypeExit
+JOIN LoginUniPass ON Permission.IdUser = LoginUniPass.IdLogin
+JOIN CheckPoints ON Permission.IdPermission = CheckPoints.IdPermission
+JOIN Point ON CheckPoints.IdPoint = Point.IdPoint
+WHERE Permission.StatusPermission = 'Aprobada'
+  AND Point.NombrePunto = 'Dormitorio'
+  AND CheckPoints.Estatus = 'Pendiente'
+  AND Accion = 'SALIDA'
+  AND LoginUniPass.Dormitorio = @Dormitorio
+  AND CONVERT(DATE, Permission.FechaSalida) <= CONVERT(DATE, GETDATE());`);
         if (result.rowsAffected[0] === 0) {
             return res.status(200).json(null); // Retorna null si no hay datos
         }
