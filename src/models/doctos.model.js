@@ -1,34 +1,35 @@
 import sql from 'mssql';
 import { getConnection } from "../configs/connectionDB.js";
 import { QuerysDoctos } from "../querys/doctos.query.js";
+import { BaseDocumentModel } from "./BaseDocument,model.js";
 
-class DoctosModel {
-    static async getDocumentFromDB(id, IdDocumento) {
+class DoctosModel extends BaseDocumentModel{
+    async get(id, IdDocumento) {
         let pool = await getConnection();
         try {
             const result = await pool.request()
                 .input('id', sql.Int, id)
                 .input('IdDocumento', sql.Int, IdDocumento)
                 .query(QuerysDoctos.getProfile);
-            return result;
+            return result.recordset[0];
         } finally {
             if (pool) await pool.close();
         }
-    };
+    }
 
-    static async getDocumentsByUserId(userId) {
+    async getAll(userId) {
         const pool = await getConnection();
         try {
             const result = await pool.request()
                 .input('Id', sql.Int, userId)
                 .query(QuerysDoctos.DocumentsByUser);
-            return result;
+            return result.recordset;
         } finally {
             await pool.close();
         }
     }
 
-    static async saveDocument(documentData) {
+    async save(documentData) {
         const pool = await getConnection();
         try {
             const { IdDocumento, Archivo, StatusDoctos, IdLogin } = documentData;
@@ -38,30 +39,28 @@ class DoctosModel {
                 .input('StatusDoctos', sql.VarChar, StatusDoctos)
                 .input('IdLogin', sql.Int, IdLogin)
                 .query(QuerysDoctos.guardarDocument);
+            return result.recordset[0];
+        } finally {
+            await pool.close();
+        }
+    }
+
+    async update(documentData) {
+        const pool = await getConnection();
+        try {
+            const { IdDocumento, Archivo, IdLogin } = documentData;
+            const result = await pool.request()
+                .input('IdDocumento', sql.Int, IdDocumento)
+                .input('Archivo', sql.VarChar, Archivo)
+                .input('IdLogin', sql.Int, IdLogin)
+                .query(QuerysDoctos.cambiarPerfil);
             return result;
         } finally {
             await pool.close();
         }
     }
 
-    /////////
-    static async updateDocument(documentData) {
-        const pool = await getConnection();
-        try {
-            const { IdDocumento, Archivo, IdLogin } = documentData;
-            const updateResult = await pool.request()
-                .input('IdDocumento', sql.Int, IdDocumento)
-                .input('Archivo', sql.VarChar, Archivo)
-                .input('IdLogin', sql.Int, IdLogin)
-                .query(QuerysDoctos.cambiarPerfil);
-
-            return updateResult;
-        } finally {
-            await pool.close();
-        }
-    }
-
-    static async deleteDocument(UserId, IdDocumento) {
+    async delete(UserId, IdDocumento) {
         const pool = await getConnection();
         try {
             const result = await pool.request()

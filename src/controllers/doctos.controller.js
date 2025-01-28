@@ -1,27 +1,24 @@
-import { getConnection } from "../configs/connectionDB.js";
 import DoctosModel from '../models/doctos.model.js';
 import { errorHandler } from '../middlewares/errorHandler.js';
-import sql from 'mssql';
 import * as fs from 'fs';
 import path from "path";
 
 export const getProfile = async (req, res) => {
     try {
-        const result = await DoctosModel.getDocumentFromDB(req.params.id, req.query.IdDocumento);
+        const result = await DoctosModel.get(req.params.id, req.query.IdDocumento);
         if (result.rowsAffected[0] === 0) {
             return res.status(404).json({ message: "Archivo no encontrado" });
         }
         return res.json(result.recordset[0]);
     } catch (error) {
-        console.error('Error en el servidor:', error);
-        res.status(500).send(error.message);
+        errorHandler(error, res);
     }
 };
 
 export const getDocumentsByUser = async (req, res) => {
     try {
         const userId = req.params.Id;
-        const result = await DoctosModel.getDocumentsByUserId(userId);
+        const result = await DoctosModel.getAll(userId);
         if (result.recordset.length === 0) {
             return res.status(404).json({ message: "No se encontraron archivos para el usuario" });
         }
@@ -47,7 +44,7 @@ export const saveDocument = async (req, res) => {
             IdLogin: req.body.IdLogin
         };
 
-        const result = await DoctosModel.saveDocument(documentData);
+        const result = await DoctosModel.save(documentData);
         if (result.recordset.length === 0) {
             return res.status(404).json({ message: "No se puede guardar el archivo" });
         }
@@ -78,12 +75,12 @@ export const uploadProfile = async (req, res) => {
             IdLogin: req.body.IdLogin
         };
 
-        const updateResult = await DoctosModel.updateDocument(documentData);
+        const updateResult = await DoctosModel.update(documentData);
         if (updateResult.rowsAffected[0] === 0) {
             return res.status(404).json({ message: "No se puede actualizar el archivo" });
         }
 
-        const updatedRecord = await DoctosModel.getDocumentFromDB(documentData.IdDocumento, documentData.IdLogin);
+        const updatedRecord = await DoctosModel.get(documentData.IdDocumento, documentData.IdLogin);
         return res.json(updatedRecord.recordset[0]);
     } catch (error) {
         errorHandler(error, res);
@@ -92,13 +89,13 @@ export const uploadProfile = async (req, res) => {
 
 export const deleteFileDoc = async (req, res) => {
     try {
-        const filePath = await DocumentModel.getDocumentFilePath(req.params.Id, req.body.IdDocumento);
+        const filePath = await DocumentModel.get(req.params.Id, req.body.IdDocumento);
 
         // Primero intentar eliminar el archivo físico
         fs.unlinkSync(path.join('./public', filePath));
 
         // Luego eliminar el registro en la base de datos
-        const deleteResult = await DocumentModel.deleteDocument(req.params.Id, req.body.IdDocumento);
+        const deleteResult = await DocumentModel.delete(req.params.Id, req.body.IdDocumento);
         if (deleteResult.rowsAffected[0] === 0) {
             return res.status(404).json({ message: "Dato no encontrado" });
         }
