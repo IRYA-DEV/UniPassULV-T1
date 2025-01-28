@@ -140,3 +140,19 @@ export const getArchivosAlumno = async (req, res) => {
         errorHandler(error, res);
     }
 };
+
+export const getArchivosAlumnoByDate = async (req, res) => {
+    console.log(req.params, req.query);
+    try {
+        const { Dormitorio, Nombre, Apellidos } = req.params;
+        const { fechaInicio, fechaFin } = req.query;
+        const result = await StudentModel.getArchivosByAlumnoAndDate(Dormitorio, Nombre, Apellidos, fechaInicio, fechaFin);
+        if (result.recordset.length === 0) {
+            return res.status(404).json({ message: "No se encontraron expedientes en las fechas especificadas" });
+        }
+        return res.json(result.recordset);
+    } catch (error) {
+        console.error('Error en el servidor:', error);
+        errorHandler(error, res);
+    }
+};

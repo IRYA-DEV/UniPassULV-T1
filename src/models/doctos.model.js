@@ -99,6 +99,22 @@ class DoctosModel {
             await pool.close();
         }
     }
+
+    static async getArchivosByAlumnoAndDate(dormitorio, nombre, apellidos, fechaInicio, fechaFin) {
+        const pool = await getConnection();
+        try {
+            const result = await pool.request()
+                .input('Dormitorio', sql.Int, dormitorio)
+                .input('Nombre', sql.VarChar, nombre)
+                .input('Apellidos', sql.VarChar, apellidos)
+                .input('FechaInicio', sql.Date, fechaInicio)
+                .input('FechaFin', sql.Date, fechaFin)
+                .query(QuerysDoctos.archivosAlumnoAndDate);
+            return result;
+        } finally {
+            await pool.close();
+        }
+    }
 }
 
 export default DoctosModel;
