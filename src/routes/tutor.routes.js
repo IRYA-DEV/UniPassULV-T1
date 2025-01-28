@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createTutor, deleteTutor, getTutor, getTutores, updateTutor } from '../controllers/tutor.controllers.js'
+import { createTutor, deleteTutor, getTutor, getTutores, updateTutor } from '../controllers/tutor.controller.js'
 
 const router = Router();
 

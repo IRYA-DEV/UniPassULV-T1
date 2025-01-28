@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { deleteFileDoc, getDocumentsByUser, saveDocument, getProfile, uploadProfile, getExpedientesAlumnos, getArchivosAlumno } from "../controllers/doctos.controller.js";
-import { Subirimagen } from "../Middleware/storage.js"; 
+import { Subirimagen } from "../middlewares/storage.js"; 
 import multer from "multer";
 
 const router = Router();

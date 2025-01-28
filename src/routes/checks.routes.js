@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createChecksPermission, getChecksDormitorio, getChecksDormitorioFinal, getChecksVigilancia, getChecksVigilanciaRegreso, putCheckPoint } from "../controllers/checks.controllers.js";
+import { createChecksPermission, getChecksDormitorio, getChecksDormitorioFinal, getChecksVigilancia, getChecksVigilanciaRegreso, putCheckPoint } from "../controllers/checks.controller.js";
 const router = Router();
 
 router.post("/checks", createChecksPermission);

@@ -1,4 +1,4 @@
-import { getConnection } from "../database/connection.js";
+import { getConnection } from "../configs/connectionDB.js";
 import sql from 'mssql';
 
 export const getUsers = async (req, res) => {
@@ -215,42 +215,27 @@ export const loginUser = async (req, res) => {
         console.log(req.body);
         pool = await getConnection();
 
-        let result;
-
-        // Intentar con matrícula
-        if (Matricula) {
-            result = await pool
-                .request()
-                .input('Matricula', sql.VarChar, Matricula)
-                .query('SELECT * FROM LoginUniPass WHERE Matricula = @Matricula');
-        } 
-        // Intentar con correo
-        else if (Correo) {
-            result = await pool
-                .request()
-                .input('Correo', sql.VarChar, Correo)
-                .query('SELECT * FROM LoginUniPass WHERE Correo = @Correo');
-        } else {
-            return res.status(400).json({ success: false, message: 'Debe proporcionar matrícula o correo' });
+        // Intentar con matrícula y contraseña
+        let result = await pool
+            .request()
+            .input('Matricula', sql.VarChar, Matricula)
+            .input('Contraseña', sql.VarChar, Contraseña)
+            .query('SELECT * FROM LoginUniPass WHERE Matricula = @Matricula AND Contraseña = @Contraseña');
+        if (result.recordset.length > 0) {
+            return res.json({ success: true, user: result.recordset[0] });
         }
 
-        // Verificar si se encontró un usuario
-        if (result.recordset.length === 0) {
-            return res.status(401).json({ success: false, message: 'Credenciales inválidas' });
+        // Intentar con correo y contraseña
+        result = await pool
+            .request()
+            .input('Correo', sql.VarChar, Correo)
+            .input('Contraseña', sql.VarChar, Contraseña)
+            .query('SELECT * FROM LoginUniPass WHERE Correo = @Correo AND Contraseña = @Contraseña');
+        if (result.recordset.length > 0) {
+            return res.json({ success: true, user: result.recordset[0] });
         }
 
-        const user = result.recordset[0];
-
-        // Comparar la contraseña ingresada con el hash almacenado
-        const isPasswordValid = await VerifyHashData(Contraseña, user.Contraseña);
-
-        if (!isPasswordValid) {
-            return res.status(401).json({ success: false, message: 'Credenciales inválidas' });
-        }
-
-        // Contraseña válida, enviar respuesta exitosa
-        return res.json({ success: true, user });
-
+        res.status(401).json({ success: false, message: 'Credenciales inválidas' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     } finally {
