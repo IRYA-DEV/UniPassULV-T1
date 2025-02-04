@@ -1,4 +1,3 @@
-import DoctosModel from '../models/doctos.model.js';
 import DoctosService from "../services/doctos.service.js";
 import { errorHandler } from '../middlewares/errorHandler.js';
 import * as fs from 'fs';
@@ -145,7 +144,7 @@ export const getArchivosAlumnoByDate = async (req, res) => {
     try {
         const { Dormitorio, Nombre, Apellidos } = req.params;
         const { fechaInicio, fechaFin } = req.query;
-        const result = await DoctosModel.getArchivosByAlumnoAndDate(Dormitorio, Nombre, Apellidos, fechaInicio, fechaFin);
+        const result = await DoctosService.getArchivosByAlumnoAndDate(Dormitorio, Nombre, Apellidos, fechaInicio, fechaFin);
         if (result.recordset.length === 0) {
             return res.status(404).json({ message: "No se encontraron expedientes en las fechas especificadas" });
         }

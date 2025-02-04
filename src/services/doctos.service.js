@@ -1,4 +1,4 @@
-import DoctosModel from "../models/doctos.model.js";
+import { DoctosModel, ExpedientesModel } from "../models/doctos.model.js";
 
 class DoctosService {
     async getProfile(id, IdDocumento) {
@@ -21,12 +21,16 @@ class DoctosService {
         return await DoctosModel.delete(userId, IdDocumento);
     }
 
-    async getExpedientesByDormitorio(IdDocumento) {
-        return await DoctosModel.getExpedientesByDormitorio(IdDocumento);
+    async getExpedientesByDormitorio(IdDormitorio) {
+        return await ExpedientesModel.getExpedientesByDormitorio(IdDormitorio);
     }
 
-    async getArchivosByAlumno(dormitorio, nombre, apellidos) {
-        return await DoctosModel.getArchivosByAlumno(dormitorio, nombre, apellidos);
+    async getArchivosByAlumno(Dormitorio, Nombre, Apellidos) {
+        return await ExpedientesModel.getArchivosByAlumno(Dormitorio, Nombre, Apellidos);
+    }
+
+    async getArchivosByAlumnoAndDate(Dormitorio, Nombre, Apellidos) {
+        return await ExpedientesModel.getArchivosByAlumnoAndDate(Dormitorio, Nombre, Apellidos);
     }
 }
 

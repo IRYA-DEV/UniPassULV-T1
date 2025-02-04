@@ -1,9 +1,10 @@
-import sql from 'mssql';
+import sql from "mssql";
 import { getConnection } from "../configs/connectionDB.js";
 import { QuerysDoctos } from "../querys/doctos.query.js";
-import { BaseDocumentModel } from "./BaseDocument.model.js";
+import { ICrud } from "../interfaces/ICrud.js";
+import { IExpedientes } from "../interfaces/IExpedientes.js";
 
-class DoctosModel extends BaseDocumentModel{
+class DoctosModel extends ICrud{
     static async get(id, IdDocumento) {
         let pool = await getConnection();
         try {
@@ -73,7 +74,10 @@ class DoctosModel extends BaseDocumentModel{
             await pool.close();
         }
     }
+}
 
+
+class ExpedientesModel extends IExpedientes {
     static async getExpedientesByDormitorio(IdDormitorio) {
         const pool = await getConnection();
         try {
@@ -117,4 +121,4 @@ class DoctosModel extends BaseDocumentModel{
     }
 }
 
-export default DoctosModel;
+export { DoctosModel, ExpedientesModel };
