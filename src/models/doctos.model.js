@@ -1,23 +1,24 @@
 import sql from 'mssql';
 import { getConnection } from "../configs/connectionDB.js";
 import { QuerysDoctos } from "../querys/doctos.query.js";
-import { BaseDocumentModel } from "./BaseDocument,model.js";
+import { BaseDocumentModel } from "./BaseDocument.model.js";
 
 class DoctosModel extends BaseDocumentModel{
-    async get(id, IdDocumento) {
+    static async get(id, IdDocumento) {
         let pool = await getConnection();
         try {
             const result = await pool.request()
                 .input('id', sql.Int, id)
                 .input('IdDocumento', sql.Int, IdDocumento)
                 .query(QuerysDoctos.getProfile);
+            console.log(result);
             return result.recordset[0];
         } finally {
             if (pool) await pool.close();
         }
     }
 
-    async getAll(userId) {
+    static async getAll(userId) {
         const pool = await getConnection();
         try {
             const result = await pool.request()
@@ -29,7 +30,7 @@ class DoctosModel extends BaseDocumentModel{
         }
     }
 
-    async save(documentData) {
+    static async save(documentData) {
         const pool = await getConnection();
         try {
             const { IdDocumento, Archivo, StatusDoctos, IdLogin } = documentData;
@@ -45,7 +46,7 @@ class DoctosModel extends BaseDocumentModel{
         }
     }
 
-    async update(documentData) {
+    static async update(documentData) {
         const pool = await getConnection();
         try {
             const { IdDocumento, Archivo, IdLogin } = documentData;
@@ -60,7 +61,7 @@ class DoctosModel extends BaseDocumentModel{
         }
     }
 
-    async delete(UserId, IdDocumento) {
+    static async delete(UserId, IdDocumento) {
         const pool = await getConnection();
         try {
             const result = await pool.request()

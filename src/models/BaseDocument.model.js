@@ -1,5 +1,5 @@
 export class BaseDocumentModel {
-    async get(id) {
+    async get(id, IdDocumento) {
         throw new Error("Not implemented");
     }
 
